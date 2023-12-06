@@ -1,7 +1,17 @@
 import {reactive} from "./@vue/reactive";
+import {effect} from "./@vue/effect";
 
-const array = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-const status = reactive(array)
+const obj = {
+    a: 1,
+    b: 2,
+    c: 4
+}
+const status = reactive(obj)
 
-status.pop()
-console.log(status)
+function f1() {
+    console.log("f1")
+    status.a
+}
+
+effect(f1)
+status.a = 3
