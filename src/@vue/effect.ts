@@ -26,7 +26,7 @@ export const cleanup = (effectFn) => {
     }
     depArray.length = 0
 }
-export const effect = (fn, options: EffectOptions = {lazyEffect: true}) => {
+export const effect = (fn, options: EffectOptions = {lazyEffect: false}) => {
     const effectFn = () => {
         try {
             activeEffect = effectFn
@@ -40,7 +40,7 @@ export const effect = (fn, options: EffectOptions = {lazyEffect: true}) => {
     }
     effectFn.depArray = []
     effectFn.options = options
-    if (options.lazyEffect) {
+    if (!options.lazyEffect) {
         effectFn()
     }
     return effectFn
