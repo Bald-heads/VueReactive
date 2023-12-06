@@ -13,5 +13,22 @@ function f1() {
     status.a
 }
 
-effect(f1)
-status.a = 3
+const effectFn = effect(f1, {
+    lazyEffect: false,
+    scheduler: (effect) => {
+        effect()
+    }
+})
+
+effectFn()
+status.a = 10
+status.a = 10
+status.a = 10
+status.a = 10
+status.a = 10
+status.a = 10
+
+
+
+
+

@@ -1,25 +1,49 @@
 import {TrackType, TriggerType} from "./utils/type/handlesType";
 
+interface EffectOptions {
+    readonly lazyEffect: boolean
+    readonly scheduler?: (effect: Function) => void
+}
+
 const targetMap = new WeakMap()
 const ITERATE_KEY = Symbol("iterate")
 let activeEffect = undefined
 let shouldTrack: boolean = true
+const effectStack = []
 export const pauseTracking = () => {
     shouldTrack = false
 }
 export const resumeTracking = () => {
     shouldTrack = true
 }
-export const effect = (fn) => {
+export const cleanup = (effectFn) => {
+    const {depArray} = effectFn
+    if (!depArray.length) {
+        return;
+    }
+    for (const depArrayElement of depArray) {
+        depArrayElement.delete(effectFn)
+    }
+    depArray.length = 0
+}
+export const effect = (fn, options: EffectOptions = {lazyEffect: true}) => {
     const effectFn = () => {
         try {
             activeEffect = effectFn
+            effectStack.push(activeEffect)
+            cleanup(effectFn)
             return fn()
         } finally {
-            activeEffect = null
+            effectStack.pop()
+            activeEffect = effectStack[effectStack.length - 1]
         }
     }
-    effectFn()
+    effectFn.depArray = []
+    effectFn.options = options
+    if (options.lazyEffect) {
+        effectFn()
+    }
+    return effectFn
 }
 
 export function track(target, trackType, key) {
@@ -46,13 +70,24 @@ export function track(target, trackType, key) {
     }
     if (!depSet.has(activeEffect)) {
         depSet.add(activeEffect)
+        activeEffect.depArray.push(depSet)
     }
 }
 
 export function trigger(target, triggerType, key) {
     const effectFns = getEffects(target, triggerType, key)
+    if (!effectFns) {
+        return
+    }
     for (const effectFn of effectFns) {
-        effectFn()
+        if (effectFn === activeEffect) {
+            continue;
+        }
+        if (effectFn.options.scheduler) {
+            effectFn.options.scheduler(effectFn)
+        } else {
+            effectFn()
+        }
     }
 }
 
